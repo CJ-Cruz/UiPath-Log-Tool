@@ -1,0 +1,67 @@
+@font-face {
+  font-family: 'Material Icons';
+  font-style: normal;
+  font-weight: 400;
+  src: url(material.woff2) format('woff2');
+}
+
+.material-icons {
+  font-family: 'Material Icons';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
+#timelineGraph{
+	min-height: 300px;
+	max-height: 300px;
+/*	border: 1px solid black*/
+}
+#levelGraph{
+	min-height: 300px;
+	max-height: 300px;
+/*	border: 1px solid black*/
+}
+
+#logsTable{
+	/*overflow-y: scroll;
+	max-height: 400px;*/
+}
+
+#graph-buttons{
+	margin: 4px;
+}
+
+.graph-button{
+	margin-right: 12px;
+}
+
+.analysis-selected{
+	background-color: rgba(243, 190, 38, .5);
+}
+
+.analysis-selected:hover{
+	background-color: rgba(243, 190, 38, .75) !important;
+}
+
+#donutChart{
+	min-height: 400px;
+	max-height: 400px;
+}
+
+#fileInput{
+	display: none;
+}
+
+h4{
+	margin: 0;
+}

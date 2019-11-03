@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>UiPath Log Tool</title>
+</head>
+<link rel="stylesheet" href="src/ult.css">
+<link rel="stylesheet" href="src/material.min.css">
+<link rel="stylesheet" href="src/tabulator_modern_modified.css">
+<body>
+	<div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-tabs">
+		<header class="mdl-layout__header">
+			<div class="mdl-layout__header-row">
+				<!-- Title -->
+				<span class="mdl-layout-title">UiPath Log Tool</span>
+				</div>
+				<!-- Tabs -->
+				<div class="mdl-layout__tab-bar mdl-js-ripple-effect">
+				<a href="#fixed-tab-1" class="mdl-layout__tab is-active">Setup</a>
+				<a id="analysisTab" href="#fixed-tab-2" class="mdl-layout__tab" style="display:none">Analysis</a>
+				<a id="debuggerTab" href="#fixed-tab-3" class="mdl-layout__tab" style="display:none">Debugger</a>
+			</div>
+		</header>
+
+		<!--Drawer-->
+		<div class="mdl-layout__drawer">
+			<span class="mdl-layout-title">UiPath Log Tool</span>
+			<nav class="mdl-navigation">
+				<a id="show-about" class="mdl-navigation__link" href="#">About</a>
+				<a id="show-help" class="mdl-navigation__link" href="#">Report an Issue</a>
+			</nav>
+		</div>
+		
+		<!--Main Content-->
+		<main class="mdl-layout__content">
+			<section class="mdl-layout__tab-panel is-active" id="fixed-tab-1">
+				<div class="page-content">
+					<div class="mdl-grid">
+						<div class="mdl-cell mdl-cell--12-col">
+					<!-- Welcome -->
+					<!-- Instructions -->
+						</div>
+					<!-- Load File -->
+						<div class="mdl-cell mdl-cell--6-col">
+							<input type="file" id="fileInput" onchange="readFiles()" multiple/>
+							<!-- Accent-colored raised button with ripple -->
+							<button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--colored" onclick="fileInput.click()">
+								Choose Execution Log File
+							</button>
+							<div id="loadStatus">Please select a UiPath Execution Log File</div>
+						</div>
+						<div class="mdl-cell mdl-cell--6-col">
+							<div id="fileProgressDiv">Reading Files
+								<div id="fileProgress" class="mdl-progress mdl-js-progress"></div>
+							</div>
+							<div id="parseProgressDiv">Parsing Logs
+								<div id="parseProgress" class="mdl-progress mdl-js-progress"></div>
+							</div>
+							<div id="jobsProgressDiv">Segregating Jobs
+								<div id="jobsProgress" class="mdl-progress mdl-js-progress"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+			<section class="mdl-layout__tab-panel" id="fixed-tab-2">
+				<div class="mdl-layout mdl-js-layout mdl-layout--fixed-drawer">
+					<div class="mdl-layout__drawer">
+						<span class="mdl-layout-title">Jobs Found:</span>
+						<nav id="jobNav" class="mdl-navigation">
+						</nav>
+					</div>
+					<main class="mdl-layout__content">
+						<div class="page-content">
+							<div class="page-content">
+								<div class="mdl-grid">
+									<div id="timeline-section" class="mdl-cell mdl-cell--12-col">
+										<div id="graph-buttons">
+											<button id="timing-button" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--colored graph-button" onclick="showTimelineGraph()">
+												Timing
+											</button>
+											<button id="logType-button" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent graph-button" onclick="showLevelGraph()">
+												Log Type
+											</button>
+										</div>
+										<div id="timelineGraphDiv"><canvas id="timelineGraph"></canvas></div>
+										<div id="levelGraphDiv"><canvas id="levelGraph"></canvas></div>
+										
+									</div>
+									<div id="table-section" class="mdl-cell mdl-cell--8-col">
+										<div id="logsTable"></div>
+									</div>
+									<div id="donut-section" class="mdl-cell mdl-cell--4-col">
+										<canvas id="donutChart"></canvas>
+									</div>
+								</div>
+							</div>
+						</div>
+					</main>
+				</div>
+			</section>
+			<section class="mdl-layout__tab-panel" id="fixed-tab-3">
+				<div class="page-content">
+					<div class="mdl-grid">
+						<div class="mdl-cell mdl-cell--12-col">
+							<h4>Job ID: <span id="jobID"></span></h4>	
+							<h4>Process Name: <span id="processName"></span></h4>	
+						</div>
+						<div class="mdl-cell mdl-cell--6-col">
+							
+						</div>
+					</div>
+				</div>
+			</section>
+		</main>
+	</div>
+	<dialog id="about" class="mdl-dialog">
+		<h4 class="mdl-dialog__title">About</h4>
+		<div class="mdl-dialog__content">
+			<p>
+			This tool is currently on version 0.1.
+			</p>
+		</div>
+		<div class="mdl-dialog__actions">
+			<button type="button" class="mdl-button close">ok</button>
+		</div>
+	</dialog>
+	<dialog id="help" class="mdl-dialog">
+		<h4 class="mdl-dialog__title">Report Issue</h4>
+		<div class="mdl-dialog__content">
+			<p>
+			If you found an issue, kindly send an e-mail to cj@cj-cruz.com.
+			</p>
+		</div>
+		<div class="mdl-dialog__actions">
+			<button type="button" class="mdl-button close">ok</button>
+		</div>
+	</dialog>
+</body>
+<script src="src/material.min.js"></script>
+<script src="src/moment.js"></script>
+<script src="src/tabulator.min.js"></script>
+<script src="src/Chart.bundle.min.js"></script>
+<script src="src/ult.js"></script>
+</html>
