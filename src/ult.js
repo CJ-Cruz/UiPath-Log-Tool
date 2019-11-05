@@ -306,7 +306,7 @@
 						break;
 				}
 			}else{
-				unknownStateData.push(1);
+				unknownStateData.push(0);
 				faultedStateData.push(0);
 				canceledStateData.push(0);
 				closedStateData.push(0);
