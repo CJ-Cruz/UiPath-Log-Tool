@@ -1,10 +1,14 @@
-/*/
-window.onbeforeunload = function(){
-  return 'Are you sure you want to leave?';
-};
-//*/
-//main
-//{
+{
+
+	//https://stackoverflow.com/a/10456644
+	Object.defineProperty(Array.prototype, 'chunk', {
+		value: function(chunkSize) {
+		  var R = [];
+		  for (var i = 0; i < this.length; i += chunkSize)
+			R.push(this.slice(i, i + chunkSize));
+		  return R;
+		}
+	});
 
 	Chart.pluginService.register({
 		beforeDraw: function (chart) {
@@ -61,6 +65,7 @@ window.onbeforeunload = function(){
 	let jobNav = document.getElementById('jobNav');
 	let timingButton = document.getElementById('timing-button');
 	let logTypeButton = document.getElementById('logType-button');
+	let chunksDiv = document.getElementById('chunksDiv');
 	let timelineGraphDiv = document.getElementById('timelineGraphDiv');
 	let levelGraphDiv = document.getElementById('levelGraphDiv');
 	let files = [];
@@ -75,6 +80,14 @@ window.onbeforeunload = function(){
 	let processName = document.getElementById('processName');
 	let reader = new FileReader();
 	let filesToRead = [];
+	let selectedChunk = 0;
+	let debuggerTable;
+	let variablesTable;
+	let variablesTableDiv = document.getElementById("variablesTable");
+	let argumentsTable;
+	let argumentsTableDiv = document.getElementById("argumentsTable");
+	let variablesButton = document.getElementById("variables-button");
+	let argumentsButton = document.getElementById("arguments-button");
 
 	//initialize progressbars
 	fileProgressDiv.style.display = "none";
@@ -84,7 +97,9 @@ window.onbeforeunload = function(){
 	//file input event
 	function readFiles(event) {
 		fileProgressDiv.style.display = "";
-	    filesToRead = [...document.getElementById("fileInput").files];
+		filesToRead = [...fileInput.files];
+		parseProgress.MaterialProgress.setProgress(0);
+		jobsProgress.MaterialProgress.setProgress(0);
 	    performRead();
 	}
 
@@ -111,19 +126,6 @@ window.onbeforeunload = function(){
 	   	} else {
     	   afterFileRead() // no more files to read
 	   	}
-/*
-	    reader.onload = (function(theFile) {
-			return function(e) {
-				file.content = e.target.result;
-			}
-		})(file);
-		reader.onloadend = (function(){
-
-		})
-
-		// Read in the file
-		reader.readAsText(file);
-*/
 	}
 
 	//trigger next steps
@@ -131,6 +133,9 @@ window.onbeforeunload = function(){
 
 		extractLogs();
 		analysisTab.style.display = "";
+		window.onbeforeunload = function(){
+			return 'Are you sure you want to leave?';
+		};
 		createAnalytics();
 		generateJobDrawer();
 		analysisTab.click();
@@ -212,7 +217,8 @@ window.onbeforeunload = function(){
 			timeData.push(timeSum+=log.difference);
 
 			switch(log.level){
-
+				
+				case "Verbose":
 				case "Trace":
 					unknownData.push(0);
 					errorData.push(0);
@@ -258,11 +264,184 @@ window.onbeforeunload = function(){
 
 		})
 
+		//Convert to chunks
+		labels = labels.chunk(50000);
+		shortLabels = shortLabels.chunk(50000);
+		diffData = diffData.chunk(50000);
+		totalData = totalData.chunk(50000);
+		timeData = timeData.chunk(50000);
+		unknownData = unknownData.chunk(50000);
+		errorData = errorData.chunk(50000);
+		warningData = warningData.chunk(50000);
+		informationData = informationData.chunk(50000);
+		traceData = traceData.chunk(50000);
+
+		//generate chunk buttons
+		chunksDiv.innerHTML = "";
+		if(labels.length > 1)
+			for(let i = 0; i < labels.length; i++){
+				let label = `${(i*50)}${i==0?"":"K"}-${((i+1)*50)}K`
+				let a = document.createElement("a");
+				a.onclick = function(){updateGraphs(i);}
+				a.classList.add("chunkButton")
+				a.innerText = label;
+				chunksDiv.appendChild(a);
+			}
+
+		function convertDataToVariablesTable(data){
+			let t = [];
+			if(!data.activityInfo)
+				return t;
+			if(!data.activityInfo.Variables)
+				return t;
+			let names = Object.keys(data.activityInfo.Variables);
+			names.map(name=>{
+				let v = data.activityInfo.Variables[name];
+				if(isNaN(v) && !(v == "True" || v == "False")){
+					v = `"${v}"`;
+				}
+				t.push({"variable":name, "value":v});
+			})
+			return t;
+		}
+
+		function convertDataToArgumentsTable(data){
+			let t = [];
+			if(!data.activityInfo)
+				return t;
+			if(!data.activityInfo.Arguments)
+				return t;
+			let names = Object.keys(data.activityInfo.Arguments);
+			names.map(name=>{
+				let v = data.activityInfo.Arguments[name];
+				if(isNaN(v) && !(v == "True" || v == "False")){
+					v = `"${v}"`;
+				}
+				t.push({"argument":name, "value":v});
+			})
+			return t;
+		}
+
 		function analysisTableRowDblClicked(e, row){
-			console.log(e,row);
+			//update debugger tab, replace table
+
+			//console.log(e,row);
+			let data = row["_row"].data;
+			
 			debuggerTab.style.display = "";
+			jobID.innerHTML = data.jobId;
+			processName.innerHTML = data.processName;
 			debuggerTab.click();
 
+			function debuggerTableRowClick(e, row){
+
+				let data = row["_row"].data;
+				debuggerTable.deselectRow();
+				debuggerTable.selectRow(data.timeStamp);
+				variablesTable.replaceData(convertDataToVariablesTable(data));
+				argumentsTable.replaceData(convertDataToArgumentsTable(data));
+
+			}
+
+			//create tables
+			//debugger table
+			if(debuggerTable)
+				debuggerTable.destroy();
+			debuggerTable = new Tabulator("#debuggerTable", {
+				data:job,      //load row data from array
+				layout:"fitColumns",      //fit columns to width of table
+				//responsiveLayout:"hide",  //hide columns that dont fit on the table
+				tooltips:true,            //show tool tips on cells
+				//addRowPos:"top",          //when adding a new row, add it to the top of the table
+				//history:true,             //allow undo and redo actions on the table
+				height: 600,
+				index: "timeStamp",
+				//pagination:"local",       //paginate the data
+				//paginationSize:100,         //allow 7 rows per page of data
+				movableColumns:true,      //allow column order to be changed
+				resizableRows:false,       //allow row order to be changed
+				scrollToRowPosition: "top",
+				scrollToRowIfVisible: true,
+				initialSort:[             //set the initial sort order of the data
+					{column:"timeStamp", dir:"asc"},
+				],
+				columns:[                 //define the table columns
+					{title:"TimeStamp", field:"timeStamp", editor:false, width: 300, sorter:"datetime", sorterParams:{format: "YYYY-MM-DDTHH:mm:ss.SSSZ"}},
+					{title:"Level", field:"level", editor:false, width:100},
+					{title:"Message", field:"message", editor:false},
+					{title:"Millisecs", field:"difference", editor:false, width:110},
+					{title:"Total Time", field:"totalTime", editor:false, width:130},
+					{title:"Stack No", field:"stackNo", editor:false, width:130},
+					{title:"Start Time", field:"startTS", editor:false, width:130},
+				],
+				rowClick:debuggerTableRowClick,
+			});
+
+			if(variablesTable)
+				variablesTable.destroy();
+			variablesTable = new Tabulator("#variablesTable", {
+				data:convertDataToVariablesTable(data),      //load row data from array
+				layout:"fitColumns",      //fit columns to width of table
+				//responsiveLayout:"hide",  //hide columns that dont fit on the table
+				tooltips:true,            //show tool tips on cells
+				//addRowPos:"top",          //when adding a new row, add it to the top of the table
+				//history:true,             //allow undo and redo actions on the table
+				height: 600,
+				index: "timeStamp",
+				//pagination:"local",       //paginate the data
+				//paginationSize:100,         //allow 7 rows per page of data
+				movableColumns:true,      //allow column order to be changed
+				resizableRows:false,       //allow row order to be changed
+				scrollToRowPosition: "top",
+				scrollToRowIfVisible: true,
+				initialSort:[             //set the initial sort order of the data
+					{column:"timeStamp", dir:"asc"},
+				],
+				columns:[                 //define the table columns
+					{title:"Variable Name", field:"variable", editor:false},
+					{title:"Value", field:"value", editor:false},
+				],
+				//rowClick:debuggerTableRowClick,
+			});
+
+			if(argumentsTable)
+				argumentsTable.destroy();
+			argumentsTable = new Tabulator("#argumentsTable", {
+				data:convertDataToArgumentsTable(data),      //load row data from array
+				layout:"fitColumns",      //fit columns to width of table
+				//responsiveLayout:"hide",  //hide columns that dont fit on the table
+				tooltips:true,            //show tool tips on cells
+				//addRowPos:"top",          //when adding a new row, add it to the top of the table
+				//history:true,             //allow undo and redo actions on the table
+				height: 600,
+				index: "timeStamp",
+				//pagination:"local",       //paginate the data
+				//paginationSize:100,         //allow 7 rows per page of data
+				movableColumns:true,      //allow column order to be changed
+				resizableRows:false,       //allow row order to be changed
+				scrollToRowPosition: "top",
+				scrollToRowIfVisible: true,
+				initialSort:[             //set the initial sort order of the data
+					{column:"timeStamp", dir:"asc"},
+				],
+				columns:[                 //define the table columns
+					{title:"Argument Name", field:"argument", editor:false},
+					{title:"Value", field:"value", editor:false},
+				],
+				//rowClick:debuggerTableRowClick,
+			});
+
+
+			//Go to Row
+			debuggerTable.clearFilter();
+			debuggerTable.clearSort();
+			debuggerTable.deselectRow();
+			debuggerTable.scrollToRow(data.timeStamp);
+			debuggerTable.selectRow(data.timeStamp);
+
+			//Show variables for the Activity
+			showVariables();
+			
 		}
 
 		//create table
@@ -293,6 +472,8 @@ window.onbeforeunload = function(){
 				{title:"Message", field:"message", editor:false},
 				{title:"Millisecs", field:"difference", editor:false, width:110},
 				{title:"Total Time", field:"totalTime", editor:false, width:130},
+				//{title:"Stack No", field:"stackNo", editor:false, width:130},
+				//{title:"Start TS", field:"startTS", editor:false, width:130},
 			],
 			rowDblClick:analysisTableRowDblClicked,
 		});
@@ -313,8 +494,8 @@ window.onbeforeunload = function(){
 			logsTable.clearSort();
 			if(array.length > 0){
 				logsTable.deselectRow();
-				logsTable.scrollToRow(labels[array[0]['_index']]);
-				logsTable.selectRow(labels[array[0]['_index']]);
+				logsTable.scrollToRow(labels[selectedChunk][array[0]['_index']]);
+				logsTable.selectRow(labels[selectedChunk][array[0]['_index']]);
 			}
 		}
 
@@ -322,11 +503,15 @@ window.onbeforeunload = function(){
 			return !(data.level == "Error" || data.level == "Warning" || data.level == "Information" || data.level == "Trace")
 		}
 
+		function filterTrace(data, filterParams){
+			return (data.level == "Verbose" || data.level == "Trace")
+		}
+
 		function donutClick(event, array){
 			//sort table
 			if(array.length > 0){
 				switch(array[0]["_index"]){
-					case 0: logsTable.setFilter("level","=","Trace");
+					case 0: logsTable.setFilter(filterTrace);
 						break;
 					case 1: logsTable.setFilter("level","=","Information");
 						break;
@@ -356,90 +541,209 @@ window.onbeforeunload = function(){
 				donutChart.update()
 			}, 50);
 		}
+		
+		let opt = {}
+
+		if(shortLabels[0].length > 3000)
+			opt = {
+				maintainAspectRatio: false,
+				onClick: timelineClick,
+				elements: {
+					line: {
+						tension: 0 // disables bezier curves
+					}
+				},
+				animation: {
+					duration: 0 // general animation time
+				},
+				hover: {
+					animationDuration: 0 // duration of animations when hovering an item
+				},
+				responsiveAnimationDuration: 0,
+			}
+		else
+			opt = {
+				maintainAspectRatio: false,
+				onClick: timelineClick,
+			}
 
 		if(timelineGraph)
 			timelineGraph.destroy();
 		let ctx = document.getElementById('timelineGraph')
 		timelineGraph = new Chart(ctx, {
-		  type: 'line',
-		  data: {
-		    labels: shortLabels,
-		    datasets: [
-		    {
-		      label: 'Difference From Last Activity',
-		      borderColor: 'rgba(216, 86, 4, 1)',
-		      backgroundColor: 'rgba(216, 86, 4, .5)',
-		      data: diffData,
-		    },
-		    {
-		      label: 'Total Execution Time of Activity',
-		      borderColor: 'rgba(232, 141, 20, 1)',
-		      backgroundColor: 'rgba(232, 141, 20, .5)',
-		      data: totalData,	
-		    },
-		    {
-		      label: 'Sum of Time Differences',
-		      borderColor: 'rgba(243, 190, 38, 1)',
-		      backgroundColor: 'rgba(243, 190, 38, .5)',
-		      borderWIdth: 1,
-		      pointRadius: 0.25,
-		      pointHitRadius: 0.25,
-		      data: timeData,	
-		    }
-		    ]
-		  },
-		  options: {
-		    maintainAspectRatio: false,
-		    onClick: timelineClick,
-		  }
+			type: 'line',
+			data: {
+				labels: shortLabels[0],
+				datasets: [
+				{
+				label: 'Difference From Last Activity',
+				borderColor: 'rgba(216, 86, 4, 1)',
+				backgroundColor: 'rgba(216, 86, 4, .5)',
+				data: diffData[0],
+				},
+				{
+				label: 'Total Execution Time of Activity',
+				borderColor: 'rgba(232, 141, 20, 1)',
+				backgroundColor: 'rgba(232, 141, 20, .5)',
+				data: totalData[0],	
+				},
+				{
+				label: 'Sum of Time Differences',
+				borderColor: 'rgba(243, 190, 38, 1)',
+				backgroundColor: 'rgba(243, 190, 38, .5)',
+				borderWIdth: 1,
+				pointRadius: 0.25,
+				pointHitRadius: 0.25,
+				data: timeData[0],	
+				}
+				]
+			},
+			options: opt
 		});
 		
 		if(levelGraph)
 			levelGraph.destroy();
 		let ctx2 = document.getElementById('levelGraph')
-		levelGraph = new Chart(ctx2, {
-		  type: 'line',
-		  data: {
-		    labels: shortLabels,
-		    datasets: [
-		    {
-		      label: 'Unknown',
-		      borderColor: 'rgba(173, 27, 2, 1)',
-		      backgroundColor: 'rgba(173, 27, 2, .5)',
-		      data: unknownData,
-		    },
-		    {
-		      label: 'Error',
-		      borderColor: 'rgba(216, 86, 4, 1)',
-		      backgroundColor: 'rgba(216, 86, 4, .5)',
-		      data: errorData,
-		    },
-		    {
-		      label: 'Warning',
-		      borderColor: 'rgba(232, 141, 20, 1)',
-		      backgroundColor: 'rgba(232, 141, 20, .5)',
-		      data: warningData,	
-		    },
-		    {
-		      label: 'Information',
-		      borderColor: 'rgba(243, 190, 38, 1)',
-		      backgroundColor: 'rgba(243, 190, 38, .5)',
-		      data: informationData,	
-		    },
-		    {
-		      label: 'Trace',
-		      borderWIdth: 1,
-		      pointRadius: 0.25,
-		      pointHitRadius: 0.25,
-		      data: traceData,	
-		    }
-		    ]
-		  },
-		  options: {
-		    maintainAspectRatio: false,
-		    onClick: timelineClick,
-		  }
+			levelGraph = new Chart(ctx2, {
+			type: 'line',
+			data: {
+				labels: shortLabels[0],
+				datasets: [
+				{
+				label: 'Unknown',
+				borderColor: 'rgba(173, 27, 2, 1)',
+				backgroundColor: 'rgba(173, 27, 2, .5)',
+				data: unknownData[0],
+				},
+				{
+				label: 'Error',
+				borderColor: 'rgba(216, 86, 4, 1)',
+				backgroundColor: 'rgba(216, 86, 4, .5)',
+				data: errorData[0],
+				},
+				{
+				label: 'Warning',
+				borderColor: 'rgba(232, 141, 20, 1)',
+				backgroundColor: 'rgba(232, 141, 20, .5)',
+				data: warningData[0],	
+				},
+				{
+				label: 'Information',
+				borderColor: 'rgba(243, 190, 38, 1)',
+				backgroundColor: 'rgba(243, 190, 38, .5)',
+				data: informationData[0],	
+				},
+				{
+				label: 'Trace',
+				borderWIdth: 1,
+				pointRadius: 0.25,
+				pointHitRadius: 0.25,
+				data: traceData[0],	
+				}
+				]
+			},
+			options: opt
 		});
+
+		function updateGraphs(chunkIndex){
+			
+			selectedChunk = chunkIndex;
+			let opt = {}
+
+			if(shortLabels[chunkIndex].length > 3000){
+				opt = {
+					maintainAspectRatio: false,
+					onClick: timelineClick,
+					elements: {
+						line: {
+							tension: 0 // disables bezier curves
+						}
+					},
+					animation: {
+						duration: 0 // general animation time
+					},
+					hover: {
+						animationDuration: 0 // duration of animations when hovering an item
+					},
+					responsiveAnimationDuration: 0,
+				}
+			}else{
+				opt = {
+					maintainAspectRatio: false,
+					onClick: timelineClick,
+				}
+			}
+
+			timelineGraph.options = opt;
+			levelGraph.options = opt;
+			timelineGraph.data = {
+				labels: shortLabels[chunkIndex],
+				datasets: [
+				{
+				label: 'Difference From Last Activity',
+				borderColor: 'rgba(216, 86, 4, 1)',
+				backgroundColor: 'rgba(216, 86, 4, .5)',
+				data: diffData[chunkIndex],
+				},
+				{
+				label: 'Total Execution Time of Activity',
+				borderColor: 'rgba(232, 141, 20, 1)',
+				backgroundColor: 'rgba(232, 141, 20, .5)',
+				data: totalData[chunkIndex],	
+				},
+				{
+				label: 'Sum of Time Differences',
+				borderColor: 'rgba(243, 190, 38, 1)',
+				backgroundColor: 'rgba(243, 190, 38, .5)',
+				borderWIdth: 1,
+				pointRadius: 0.25,
+				pointHitRadius: 0.25,
+				data: timeData[chunkIndex],	
+				}
+				]
+			};
+
+			levelGraph.data = {
+				labels: shortLabels[chunkIndex],
+				datasets: [
+				{
+				label: 'Unknown',
+				borderColor: 'rgba(173, 27, 2, 1)',
+				backgroundColor: 'rgba(173, 27, 2, .5)',
+				data: unknownData[chunkIndex],
+				},
+				{
+				label: 'Error',
+				borderColor: 'rgba(216, 86, 4, 1)',
+				backgroundColor: 'rgba(216, 86, 4, .5)',
+				data: errorData[chunkIndex],
+				},
+				{
+				label: 'Warning',
+				borderColor: 'rgba(232, 141, 20, 1)',
+				backgroundColor: 'rgba(232, 141, 20, .5)',
+				data: warningData[chunkIndex],	
+				},
+				{
+				label: 'Information',
+				borderColor: 'rgba(243, 190, 38, 1)',
+				backgroundColor: 'rgba(243, 190, 38, .5)',
+				data: informationData[chunkIndex],	
+				},
+				{
+				label: 'Trace',
+				borderWIdth: 1,
+				pointRadius: 0.25,
+				pointHitRadius: 0.25,
+				data: traceData[chunkIndex],	
+				}
+				]
+			};
+			
+			timelineGraph.update();
+			levelGraph.update();
+			
+		}
 		
 		if(donutChart)
 			donutChart.destroy();
@@ -491,10 +795,19 @@ window.onbeforeunload = function(){
 				}
 			}
 		});
+		
+	}
 
-		timelineGraph.resize();
-		levelGraph.resize();
-		donutChart.resize();
+	//gets unique list of States from current job
+	function getStates(){
+
+		let l = [];
+		selectedJob.map(log=>{
+			if(log.activityInfo)
+				if(!l.includes(log.activityInfo.State))
+					l.push(log.activityInfo.State)
+		})
+		console.log(l);
 
 	}
 
@@ -504,19 +817,56 @@ window.onbeforeunload = function(){
 
 		//pair executing and closing logs
 		let pairStack = [];
+		let stackNo = 0;
 		logs.formatted.map(log=>{
 			if(log.activityInfo){
 				if(log.activityInfo.State == "Executing"){
+					log.stackNo = stackNo++;
 					pairStack.push(log)
-				}else{
+				}else if(log.activityInfo.State == "Closed" || log.activityInfo.State == "Faulted" || log.activityInfo.State == "Canceled"){
+					let stackDup = [...pairStack];
+					let stackNoDup = stackNo;
+					let start = stackDup.pop();
+					stackNoDup--;
+					if(!start)
+						return;
+					while(start != undefined && start.activityInfo.DisplayName != log.activityInfo.DisplayName){
+						start = stackDup.pop();
+						stackNoDup--;
+					}
+					if(!start){//undefined
+						log.totalTime = 0;
+					}else{
+						let diff = (new Date(log.timeStamp)) - (new Date(start.timeStamp));
+						pairStack = [...stackDup];
+						stackNo = stackNoDup;
+						start.totalTime = 0;
+						log.stackNo = stackNo;
+						log.totalTime = diff;
+						log.startFP = start.fingerprint;
+						log.startTS = start.timeStamp;
+					}
+					
+				/*
+				}else if(log.activityInfo.State == "Faulted"){
 					let start = pairStack.pop();
-					let diff = (new Date(log.timeStamp)) - (new Date(start.timeStamp));
-					start.totalTime = 0;
-					log.totalTime = diff;
-					log.startFP = start.fingerprint;
-					log.startTS = start.timeStamp;
+					if(!start)
+						return;
+					if(start.activityInfo.DisplayName != log.activityInfo.DisplayName){
+						console.log(log, start);
+						log.totalTime = 0;
+						pairStack.push(start);
+					}else{
+						let diff = (new Date(log.timeStamp)) - (new Date(start.timeStamp));
+						stackNo--;
+						start.totalTime = 0;
+						log.stackNo = stackNo;
+						log.totalTime = diff;
+						log.startFP = start.fingerprint;
+						log.startTS = start.timeStamp;
+					}*/
 				}
-			}else if(log.level == "Information"){
+			/*}else if(log.level == "Information"){
 				if(log.totalExecutionTime){
 					let start = pairStack.pop();
 					let diff = (new Date(log.timeStamp)) - (new Date(start.timeStamp));
@@ -529,7 +879,7 @@ window.onbeforeunload = function(){
 				}else{
 					log.totalTime = 0;
 				}
-			}else{
+			*/}else{
 				log.totalTime = 0;
 			}
 		})
@@ -589,6 +939,20 @@ window.onbeforeunload = function(){
 
 	}
 
+	function showVariables(){
+		variablesTableDiv.style.display = "";
+		variablesButton.setAttribute("disabled","");
+		argumentsTableDiv.style.display = "none";
+		argumentsButton.removeAttribute("disabled","");
+	}
+
+	function showArguments(){
+		variablesTableDiv.style.display = "none";
+		variablesButton.removeAttribute("disabled","");
+		argumentsTableDiv.style.display = "";
+		argumentsButton.setAttribute("disabled","");		
+	}
+
 	function showTimelineGraph(){
 		timingButton.setAttribute("disabled","");
 		logTypeButton.removeAttribute("disabled");
@@ -614,7 +978,7 @@ window.onbeforeunload = function(){
 
 	}
 	
-//}
+}
 
 //dialogs
 {

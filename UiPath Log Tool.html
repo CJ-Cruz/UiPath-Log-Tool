@@ -3,9 +3,9 @@
 <head>
 	<title>UiPath Log Tool</title>
 </head>
-<link rel="stylesheet" href="src/ult.css">
 <link rel="stylesheet" href="src/material.min.css">
 <link rel="stylesheet" href="src/tabulator_modern_modified.css">
+<link rel="stylesheet" href="src/ult.css">
 <body>
 	<div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-tabs">
 		<header class="mdl-layout__header">
@@ -37,6 +37,9 @@
 					<div class="mdl-grid">
 						<div class="mdl-cell mdl-cell--12-col">
 					<!-- Welcome -->
+							<h2>Welcome to UiPath Log Tool</h2>
+							<p>This tool will help you easily analyze and debug the data UiPath Execution Logs.</p>
+							<p>Click on Choose Execution Log File button below to begin.</p>
 					<!-- Instructions -->
 						</div>
 					<!-- Load File -->
@@ -73,7 +76,7 @@
 						<div class="page-content">
 							<div class="page-content">
 								<div class="mdl-grid">
-									<div id="timeline-section" class="mdl-cell mdl-cell--12-col">
+									<div class="mdl-cell mdl-cell--2-col">
 										<div id="graph-buttons">
 											<button id="timing-button" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--colored graph-button" onclick="showTimelineGraph()">
 												Timing
@@ -82,12 +85,19 @@
 												Log Type
 											</button>
 										</div>
+									</div>
+									<div id="chunksDiv" class="mdl-cell mdl-cell--10-col">
+
+									</div>
+									<div id="timeline-section" class="mdl-cell mdl-cell--12-col">
+										
 										<div id="timelineGraphDiv"><canvas id="timelineGraph"></canvas></div>
 										<div id="levelGraphDiv"><canvas id="levelGraph"></canvas></div>
 										
 									</div>
 									<div id="table-section" class="mdl-cell mdl-cell--8-col">
 										<div id="logsTable"></div>
+										Note: Double-Click a row to move to Debugger.
 									</div>
 									<div id="donut-section" class="mdl-cell mdl-cell--4-col">
 										<canvas id="donutChart"></canvas>
@@ -102,11 +112,27 @@
 				<div class="page-content">
 					<div class="mdl-grid">
 						<div class="mdl-cell mdl-cell--12-col">
-							<h4>Job ID: <span id="jobID"></span></h4>	
-							<h4>Process Name: <span id="processName"></span></h4>	
+							<h5>Job ID: <span id="jobID"></span></h5>	
+							<h5>Process Name: <span id="processName"></span></h5>
+
 						</div>
-						<div class="mdl-cell mdl-cell--6-col">
-							
+						<div class="mdl-cell mdl-cell--8-col">
+						</div>
+						<div class="mdl-cell mdl-cell--4-col">
+							<button id="variables-button" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--colored graph-button" onclick="showVariables()">
+								Variables
+							</button>
+							<button id="arguments-button" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent graph-button" onclick="showArguments()">
+								Arguments
+							</button>
+						</div>
+						<div class="mdl-cell mdl-cell--8-col">
+							<div id="debuggerTable"></div>
+							Note: Click on a row to check the activity's variables and arguments.
+						</div>
+						<div class="mdl-cell mdl-cell--4-col">
+							<div id="variablesTable"></div>
+							<div id="argumentsTable"></div>
 						</div>
 					</div>
 				</div>
@@ -117,7 +143,7 @@
 		<h4 class="mdl-dialog__title">About</h4>
 		<div class="mdl-dialog__content">
 			<p>
-			This tool is currently on version 0.1.
+			This tool is currently on version 1.0.
 			</p>
 		</div>
 		<div class="mdl-dialog__actions">
@@ -128,7 +154,7 @@
 		<h4 class="mdl-dialog__title">Report Issue</h4>
 		<div class="mdl-dialog__content">
 			<p>
-			If you found an issue, kindly send an e-mail to cj@cj-cruz.com.
+			If you find an issue, kindly send an e-mail to christian.josh.cruz@pwc.com.
 			</p>
 		</div>
 		<div class="mdl-dialog__actions">
