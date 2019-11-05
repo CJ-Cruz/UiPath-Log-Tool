@@ -190,6 +190,7 @@
 			selection.classList.add('analysis-selected');
 		}
 		
+		selectedChunk = 0;
 		selectedJob = job;
 
 		//initialize graphs
@@ -710,37 +711,34 @@
 			data: {
 				labels: shortLabels[0],
 				datasets: [
-				{
-				label: 'Unknown',
-				borderColor: 'rgba(173, 27, 2, 1)',
-				backgroundColor: 'rgba(173, 27, 2, .5)',
-				data: unknownStateData[0],
-				},
-				{
-				label: 'Faulted',
-				borderColor: 'rgba(216, 86, 4, 1)',
-				backgroundColor: 'rgba(216, 86, 4, .5)',
-				data: faultedStateData[0],
-				},
-				{
-				label: 'Canceled',
-				borderColor: 'rgba(232, 141, 20, 1)',
-				backgroundColor: 'rgba(232, 141, 20, .5)',
-				data: canceledStateData[0],	
-				},
-				{
-				label: 'Closed',
-				borderColor: 'rgba(243, 190, 38, 1)',
-				backgroundColor: 'rgba(243, 190, 38, .5)',
-				data: closedStateData[0],	
-				},
-				{
-				label: 'Executing',
-				borderWIdth: 1,
-				pointRadius: 0.25,
-				pointHitRadius: 0.25,
-				data: executingStateData[0],	
-				}
+					{
+					label: 'Unknown',
+					borderColor: 'rgba(173, 27, 2, 1)',
+					backgroundColor: 'rgba(173, 27, 2, .5)',
+					data: unknownStateData[0],
+					},
+					{
+					label: 'Faulted',
+					borderColor: 'rgba(216, 86, 4, 1)',
+					backgroundColor: 'rgba(216, 86, 4, .5)',
+					data: faultedStateData[0],
+					},
+					{
+					label: 'Canceled',
+					borderColor: 'rgba(232, 141, 20, 1)',
+					backgroundColor: 'rgba(232, 141, 20, .5)',
+					data: canceledStateData[0],	
+					},
+					{
+					label: 'Closed',
+					borderColor: 'rgba(243, 190, 38, 1)',
+					backgroundColor: 'rgba(243, 190, 38, .5)',
+					data: closedStateData[0],	
+					},
+					{
+					label: 'Executing',
+					data: executingStateData[0],	
+					}
 				]
 			},
 			options: opt
@@ -777,6 +775,7 @@
 
 			timelineGraph.options = opt;
 			levelGraph.options = opt;
+			stateGraph.options = opt;
 			timelineGraph.data = {
 				labels: shortLabels[chunkIndex],
 				datasets: [
@@ -840,9 +839,44 @@
 				}
 				]
 			};
+
+			stateGraph.data = {
+				labels: shortLabels[chunkIndex],
+				datasets: [
+				{
+				label: 'Unknown',
+				borderColor: 'rgba(173, 27, 2, 1)',
+				backgroundColor: 'rgba(173, 27, 2, .5)',
+				data: unknownStateData[chunkIndex],
+				},
+				{
+				label: 'Faulted',
+				borderColor: 'rgba(216, 86, 4, 1)',
+				backgroundColor: 'rgba(216, 86, 4, .5)',
+				data: faultedStateData[chunkIndex],
+				},
+				{
+				label: 'Canceled',
+				borderColor: 'rgba(232, 141, 20, 1)',
+				backgroundColor: 'rgba(232, 141, 20, .5)',
+				data: canceledStateData[chunkIndex],	
+				},
+				{
+				label: 'Closed',
+				borderColor: 'rgba(243, 190, 38, 1)',
+				backgroundColor: 'rgba(243, 190, 38, .5)',
+				data: closedStateData[chunkIndex],	
+				},
+				{
+				label: 'Executing',
+				data: executingStateData[chunkIndex],	
+				}
+				]
+			},
 			
 			timelineGraph.update();
 			levelGraph.update();
+			stateGraph.update();
 			
 		}
 		
