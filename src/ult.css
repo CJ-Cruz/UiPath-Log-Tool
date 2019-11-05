@@ -32,6 +32,12 @@
 /*	border: 1px solid black*/
 }
 
+#stateGraph{
+	min-height: 300px;
+	max-height: 300px;
+/*	border: 1px solid black*/
+}
+
 #logsTable{
 	/*overflow-y: scroll;
 	max-height: 400px;*/

@@ -76,7 +76,7 @@
 						<div class="page-content">
 							<div class="page-content">
 								<div class="mdl-grid">
-									<div class="mdl-cell mdl-cell--2-col">
+									<div class="mdl-cell mdl-cell--4-col">
 										<div id="graph-buttons">
 											<button id="timing-button" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--colored graph-button" onclick="showTimelineGraph()">
 												Timing
@@ -84,15 +84,19 @@
 											<button id="logType-button" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent graph-button" onclick="showLevelGraph()">
 												Log Type
 											</button>
+											<button id="state-button" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent graph-button" onclick="showStateGraph()">
+												State
+											</button>
 										</div>
 									</div>
-									<div id="chunksDiv" class="mdl-cell mdl-cell--10-col">
+									<div id="chunksDiv" class="mdl-cell mdl-cell--8-col">
 
 									</div>
 									<div id="timeline-section" class="mdl-cell mdl-cell--12-col">
 										
 										<div id="timelineGraphDiv"><canvas id="timelineGraph"></canvas></div>
 										<div id="levelGraphDiv"><canvas id="levelGraph"></canvas></div>
+										<div id="stateGraphDiv"><canvas id="stateGraph"></canvas></div>
 										
 									</div>
 									<div id="table-section" class="mdl-cell mdl-cell--8-col">

@@ -65,15 +65,18 @@
 	let jobNav = document.getElementById('jobNav');
 	let timingButton = document.getElementById('timing-button');
 	let logTypeButton = document.getElementById('logType-button');
+	let stateButton = document.getElementById('state-button');
 	let chunksDiv = document.getElementById('chunksDiv');
 	let timelineGraphDiv = document.getElementById('timelineGraphDiv');
 	let levelGraphDiv = document.getElementById('levelGraphDiv');
+	let stateGraphDiv = document.getElementById('stateGraphDiv');
 	let files = [];
 	let logs = [];
 	let jobs = [];
 	let logsTable;
 	let timelineGraph;
 	let levelGraph;
+	let stateGraph;
 	let donutChart;
 	let selectedJob;
 	let jobID = document.getElementById('jobID');
@@ -190,10 +193,7 @@
 		selectedJob = job;
 
 		//initialize graphs
-		timingButton.setAttribute("disabled","");
-		logTypeButton.removeAttribute("disabled");
-		timelineGraphDiv.style.display = "";
-		levelGraphDiv.style.display = "none";
+		showTimelineGraph();
 
 		//get labels
 		let labels = [];
@@ -207,6 +207,11 @@
 		let warningData = [];
 		let informationData = [];
 		let traceData = [];
+		let unknownStateData = [];
+		let faultedStateData = [];
+		let canceledStateData = [];
+		let closedStateData = [];
+		let executingStateData = [];
 		let donutData = [0,0,0,0,0];
 		job.map(log=>{
 			labels.push(log.timeStamp);
@@ -262,6 +267,53 @@
 
 			}
 
+			if(log.activityInfo){
+				switch(log.activityInfo.State){
+					case "Faulted":
+						unknownStateData.push(0);
+						faultedStateData.push(1);
+						canceledStateData.push(0);
+						closedStateData.push(0);
+						executingStateData.push(0);
+						break;
+					case "Canceled":
+						unknownStateData.push(0);
+						faultedStateData.push(0);
+						canceledStateData.push(1);
+						closedStateData.push(0);
+						executingStateData.push(0);
+						break;
+					case "Closed":
+						unknownStateData.push(0);
+						faultedStateData.push(0);
+						canceledStateData.push(0);
+						closedStateData.push(1);
+						executingStateData.push(0);
+						break;
+					case "Executing":
+						unknownStateData.push(0);
+						faultedStateData.push(0);
+						canceledStateData.push(0);
+						closedStateData.push(0);
+						executingStateData.push(1);
+						break;
+					default:
+						unknownStateData.push(0);
+						faultedStateData.push(0);
+						canceledStateData.push(0);
+						closedStateData.push(0);
+						executingStateData.push(0);
+						break;
+				}
+			}else{
+				unknownStateData.push(1);
+				faultedStateData.push(0);
+				canceledStateData.push(0);
+				closedStateData.push(0);
+				executingStateData.push(0);
+			}
+			
+
 		})
 
 		//Convert to chunks
@@ -275,6 +327,11 @@
 		warningData = warningData.chunk(50000);
 		informationData = informationData.chunk(50000);
 		traceData = traceData.chunk(50000);
+		unknownStateData = unknownStateData.chunk(50000);
+		faultedStateData = faultedStateData.chunk(50000);
+		canceledStateData = canceledStateData.chunk(50000);
+		closedStateData = closedStateData.chunk(50000);
+		executingStateData = executingStateData.chunk(50000);
 
 		//generate chunk buttons
 		chunksDiv.innerHTML = "";
@@ -645,6 +702,50 @@
 			options: opt
 		});
 
+		if(stateGraph)
+			stateGraph.destroy();
+		let ctx4 = document.getElementById('stateGraph')
+			stateGraph = new Chart(ctx4, {
+			type: 'line',
+			data: {
+				labels: shortLabels[0],
+				datasets: [
+				{
+				label: 'Unknown',
+				borderColor: 'rgba(173, 27, 2, 1)',
+				backgroundColor: 'rgba(173, 27, 2, .5)',
+				data: unknownStateData[0],
+				},
+				{
+				label: 'Faulted',
+				borderColor: 'rgba(216, 86, 4, 1)',
+				backgroundColor: 'rgba(216, 86, 4, .5)',
+				data: faultedStateData[0],
+				},
+				{
+				label: 'Canceled',
+				borderColor: 'rgba(232, 141, 20, 1)',
+				backgroundColor: 'rgba(232, 141, 20, .5)',
+				data: canceledStateData[0],	
+				},
+				{
+				label: 'Closed',
+				borderColor: 'rgba(243, 190, 38, 1)',
+				backgroundColor: 'rgba(243, 190, 38, .5)',
+				data: closedStateData[0],	
+				},
+				{
+				label: 'Executing',
+				borderWIdth: 1,
+				pointRadius: 0.25,
+				pointHitRadius: 0.25,
+				data: executingStateData[0],	
+				}
+				]
+			},
+			options: opt
+		});
+
 		function updateGraphs(chunkIndex){
 			
 			selectedChunk = chunkIndex;
@@ -908,12 +1009,15 @@
 		//initialize analysis page
 		timingButton.setAttribute("disabled","");
 		logTypeButton.setAttribute("disabled","");
+		stateButton.setAttribute("disabled","");
 		if(logsTable)
 			logsTable.destroy();
 		if(timelineGraph)
 			timelineGraph.destroy();
 		if(levelGraph)
 			levelGraph.destroy();
+		if(stateGraph)
+			stateGraph.destroy();
 
 
 
@@ -956,15 +1060,28 @@
 	function showTimelineGraph(){
 		timingButton.setAttribute("disabled","");
 		logTypeButton.removeAttribute("disabled");
+		stateButton.removeAttribute("disabled");
 		timelineGraphDiv.style.display = "";
 		levelGraphDiv.style.display = "none";
+		stateGraphDiv.style.display = "none";
 	}
 
 	function showLevelGraph(){
 		timingButton.removeAttribute("disabled");
 		logTypeButton.setAttribute("disabled","");
+		stateButton.removeAttribute("disabled");
 		timelineGraphDiv.style.display = "none";
 		levelGraphDiv.style.display = "";
+		stateGraphDiv.style.display = "none";
+	}
+
+	function showStateGraph(){
+		timingButton.removeAttribute("disabled");
+		logTypeButton.removeAttribute("disabled");
+		stateButton.setAttribute("disabled","");
+		timelineGraphDiv.style.display = "none";
+		levelGraphDiv.style.display = "none";
+		stateGraphDiv.style.display = "";
 	}
 
 	function toDateTimeString(timeStamp){
