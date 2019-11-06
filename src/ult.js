@@ -1,4 +1,4 @@
-{
+
 
 	//https://stackoverflow.com/a/10456644
 	Object.defineProperty(Array.prototype, 'chunk', {
@@ -79,8 +79,8 @@
 	let stateGraph;
 	let donutChart;
 	let selectedJob;
-	let jobID = document.getElementById('jobID');
-	let processName = document.getElementById('processName');
+//	let jobID = document.getElementById('jobID');
+//	let processName = document.getElementById('processName');
 	let reader = new FileReader();
 	let filesToRead = [];
 	let selectedChunk = 0;
@@ -91,6 +91,11 @@
 	let argumentsTableDiv = document.getElementById("argumentsTable");
 	let variablesButton = document.getElementById("variables-button");
 	let argumentsButton = document.getElementById("arguments-button");
+	let fieldFilter = document.getElementById("fieldFilter");
+	let operationFilter = document.getElementById("operationFilter");
+	let fieldValue = document.getElementById("fieldValue");
+	let varName = document.getElementById("varName");
+	let varValue = document.getElementById("varValue");
 
 	//initialize progressbars
 	fileProgressDiv.style.display = "none";
@@ -387,8 +392,8 @@
 			let data = row["_row"].data;
 			
 			debuggerTab.style.display = "";
-			jobID.innerHTML = data.jobId;
-			processName.innerHTML = data.processName;
+			//jobID.innerHTML = data.jobId;
+			//processName.innerHTML = data.processName;
 			debuggerTab.click();
 
 			function debuggerTableRowClick(e, row){
@@ -398,6 +403,13 @@
 				debuggerTable.selectRow(data.timeStamp);
 				variablesTable.replaceData(convertDataToVariablesTable(data));
 				argumentsTable.replaceData(convertDataToArgumentsTable(data));
+
+			}
+
+			function debuggerTableRowDblClick(e, row){
+
+				let data = row["_row"].data;
+				console.log(data)
 
 			}
 
@@ -426,13 +438,15 @@
 				columns:[                 //define the table columns
 					{title:"TimeStamp", field:"timeStamp", editor:false, width: 300, sorter:"datetime", sorterParams:{format: "YYYY-MM-DDTHH:mm:ss.SSSZ"}},
 					{title:"Level", field:"level", editor:false, width:100},
-					{title:"Message", field:"message", editor:false},
+					{title:"Message", field:"message", editor:false, width: 400},
 					{title:"Millisecs", field:"difference", editor:false, width:110},
 					{title:"Total Time", field:"totalTime", editor:false, width:130},
+					{title:"File Name", field:"fileName", editor:false, width:200},
 					{title:"Stack No", field:"stackNo", editor:false, width:130},
 					{title:"Start Time", field:"startTS", editor:false, width:130},
 				],
 				rowClick:debuggerTableRowClick,
+				rowDblClick:debuggerTableRowDblClick,
 			});
 
 			if(variablesTable)
@@ -1128,8 +1142,56 @@
 			""
 
 	}
+
+	function checkFieldFilter(){
+
+		debuggerTable.clearFilter()
+		if(!fieldFilter.value || !operationFilter.value)
+			return;
+
+		debuggerTable.addFilter(fieldFilter.value, operationFilter.value, fieldValue.value);
+
+	}
 	
-}
+	function checkVariableFilter(){
+
+		debuggerTable.clearFilter()
+		if(!varName.value)
+			return;
+
+		function variableFilter(data, filterParams){
+
+			if(data.activityInfo){
+				if(data.activityInfo.Variables){
+					if(Object.keys(data.activityInfo.Variables).includes(filterParams.name)){
+						if(filterParams.value != ""){
+							if(filterParams.value == data.activityInfo.Variables[filterParams.name])
+								return true;
+						}else{
+							return true;
+						}
+					}
+				}
+				if(data.activityInfo.Arguments){
+					if(Object.keys(data.activityInfo.Arguments).includes(filterParams.name)){
+						if(filterParams.value != ""){
+							if(filterParams.value == data.activityInfo.Arguments[filterParams.name])
+								return true;
+						}else{
+							return true;
+						}
+					}
+				}
+			}
+
+			return false;
+
+		}
+
+		debuggerTable.setFilter(variableFilter, {"name":varName.value, "value":varValue.value});
+
+	}
+
 
 //dialogs
 {
